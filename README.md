@@ -324,6 +324,44 @@ echo "SCCACHE_S3_KEY_PREFIX=cache/sccache" >> $GITHUB_ENV
 echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 ```
 
+### `git_proxy`
+
+Only available for RunsOn runners.
+
+Configures git to use the [smart-git-proxy](https://github.com/runs-on/smart-git-proxy) for GitHub access. This proxy provides enhanced caching and performance for git operations.
+
+When enabled, this action automatically configures git to:
+- Route GitHub traffic through `smart-git-proxy.runs-on.internal:8080`
+- Set up authentication using the `GITHUB_TOKEN` environment variable
+- Apply the configuration globally for all git operations in the workflow
+
+Example:
+
+```yaml
+jobs:
+  build:
+    runs-on: runs-on=${{ github.run_id }}/runner=2cpu-linux-x64
+    steps:
+      - uses: runs-on/action@v2
+        with:
+          git_proxy: true
+      - uses: actions/checkout@v4
+      - run: # your git operations will now use the proxy
+```
+
+Possible values:
+
+* `true` - Enable smart git proxy for GitHub access
+* `false` - Disable git proxy (default)
+
+What this does under the hood is the equivalent of:
+
+```bash
+AUTH=$(echo -n "x-access-token:$GITHUB_TOKEN" | base64)
+git config --global url."http://smart-git-proxy.runs-on.internal:8080/github.com/".insteadOf "https://github.com/"
+git config --global "http.http://smart-git-proxy.runs-on.internal:8080/.extraheader" "AUTHORIZATION: basic $AUTH"
+```
+
 ## Development
 
 Make your source code changes in a commit, then push the updated binaries and JS files in a separate commit:

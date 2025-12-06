@@ -8,6 +8,7 @@ import (
 	"github.com/runs-on/action/internal/config"
 	"github.com/runs-on/action/internal/costs"
 	"github.com/runs-on/action/internal/env"
+	"github.com/runs-on/action/internal/gitproxy"
 	"github.com/runs-on/action/internal/monitoring"
 	"github.com/runs-on/action/internal/sccache"
 	"github.com/sethvargo/go-githubactions"
@@ -29,6 +30,13 @@ func handleMainExecution(action *githubactions.Action, ctx context.Context) {
 
 	if cfg.HasShowCosts() {
 		action.Infof("show_costs is enabled. You will find cost details in the post-execution step of this action.")
+	}
+
+	// Configure git proxy if requested
+	if cfg.HasGitProxy() {
+		if err := gitproxy.ConfigureGitProxy(action); err != nil {
+			action.Errorf("Failed to configure git proxy: %v", err)
+		}
 	}
 
 	// Configure sccache if requested

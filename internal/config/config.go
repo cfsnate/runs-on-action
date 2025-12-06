@@ -17,6 +17,7 @@ type Config struct {
 	NetworkInterface  string
 	DiskDevice        string
 	Sccache           string
+	GitProxy          bool
 	ZctionsResultsURL string
 	ActionsResultsURL string
 }
@@ -61,6 +62,15 @@ func NewConfigFromInputs(action *githubactions.Action) (*Config, error) {
 
 	cfg.Sccache = action.GetInput("sccache")
 
+	gitProxyStr := action.GetInput("git_proxy")
+	if gitProxyStr != "" {
+		var err error
+		cfg.GitProxy, err = strconv.ParseBool(gitProxyStr)
+		if err != nil {
+			action.Warningf("Error parsing 'git_proxy' input '%s': %v. Assuming false.", gitProxyStr, err)
+		}
+	}
+
 	cfg.ZctionsResultsURL = os.Getenv("ZCTIONS_RESULTS_URL")
 	cfg.ActionsResultsURL = os.Getenv("ACTIONS_RESULTS_URL")
 
@@ -70,6 +80,7 @@ func NewConfigFromInputs(action *githubactions.Action) (*Config, error) {
 	action.Infof("Input 'network_interface': %s", cfg.NetworkInterface)
 	action.Infof("Input 'disk_device': %s", cfg.DiskDevice)
 	action.Infof("Input 'sccache': %s", cfg.Sccache)
+	action.Infof("Input 'git_proxy': %t", cfg.GitProxy)
 
 	if cfg.ZctionsResultsURL != "" {
 		action.Infof("ZCTIONS_RESULTS_URL is set: %s", cfg.ZctionsResultsURL)
@@ -94,6 +105,10 @@ func (c *Config) HasMetrics() bool {
 
 func (c *Config) HasSccache() bool {
 	return c.IsUsingRunsOn() && c.IsUsingLinux() && c.Sccache != ""
+}
+
+func (c *Config) HasGitProxy() bool {
+	return c.IsUsingRunsOn() && c.GitProxy
 }
 
 func (c *Config) IsUsingRunsOn() bool {
